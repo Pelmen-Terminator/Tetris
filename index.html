@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Тетрис</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="stripe"></div>
+            <h1>ТЕТРИС</h1>
+            <div class="stripe"></div>
+        </div>
+        <div class="game-wrapper">
+            <div class="board-container">
+                <canvas id="board"></canvas>
+                <div id="overlay" class="overlay hidden">
+                    <div id="overlay-title">ПАУЗА</div>
+                    <div id="overlay-sub"></div>
+                    <button id="overlay-btn">ПРОДОЛЖИТЬ</button>
+                </div>
+            </div>
+            <div class="sidebar">
+                <div class="panel">
+                    <div class="panel-title">СЛЕДУЮЩАЯ</div>
+                    <canvas id="next-canvas" class="mini-canvas"></canvas>
+                </div>
+                <div class="panel">
+                    <div class="panel-title">ХРАНИЛИЩЕ</div>
+                    <canvas id="hold-canvas" class="mini-canvas"></canvas>
+                </div>
+                <div class="panel stats">
+                    <div class="stat-row"><span>СЧЁТ</span><span id="score">0</span></div>
+                    <div class="stat-row"><span>ЛИНИИ</span><span id="lines">0</span></div>
+                    <div class="stat-row"><span>УРОВЕНЬ</span><span id="level">1</span></div>
+                    <button id="sound-btn">🔊 ЗВУК</button>
+                    <button id="pause-btn">⏸ ПАУЗА</button>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="controls-row">
+                <button class="ctrl-btn" id="move-left">◀</button>
+                <button class="ctrl-btn" id="rotate-btn">⟳</button>
+                <button class="ctrl-btn" id="hold-btn">H</button>
+                <button class="ctrl-btn" id="move-right">▶</button>
+            </div>
+            <div class="controls-row">
+                <button class="ctrl-btn wide" id="soft-drop">▼ мягко</button>
+                <button class="ctrl-btn wide" id="hard-drop">⤓ сброс</button>
+            </div>
+        </div>
+        <div class="hint">Свайп ← → · свайп вниз — сброс · тап — поворот</div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
