@@ -289,6 +289,7 @@ function resizeBoard() {
     boardCanvas.height = ROWS * cellSize;
     boardCanvas.style.width = boardCanvas.width + 'px';
     boardCanvas.style.height = boardCanvas.height + 'px';
+    console.log('Board size:', boardCanvas.width, 'x', boardCanvas.height, 'cellSize:', cellSize);
 }
 
 function drawBoard(state) {
@@ -298,10 +299,16 @@ function drawBoard(state) {
     const h = boardCanvas.height;
     const cs = cellSize;
 
+    if (w === 0 || h === 0) {
+        console.warn('Canvas has zero size!');
+        return;
+    }
+
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#070a16';
     ctx.fillRect(0, 0, w, h);
 
+    // Сетка
     ctx.strokeStyle = '#1c2340';
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= COLS; i++) {
@@ -317,6 +324,7 @@ function drawBoard(state) {
         ctx.stroke();
     }
 
+    // Закреплённые блоки
     for (let y = 0; y < grid.length; y++) {
         for (let x = 0; x < grid[y].length; x++) {
             if (grid[y][x]) {
@@ -325,7 +333,9 @@ function drawBoard(state) {
         }
     }
 
+    // Текущая фигура
     if (current && !state.gameOver) {
+        // Ghost
         const gy = ghostY(grid, current);
         for (const [cx, cy] of current.cells) {
             const px = cx + current.x;
@@ -334,6 +344,7 @@ function drawBoard(state) {
                 drawCell(ctx, px, py, COLORS[current.type], 0.35, true);
             }
         }
+        // Основная фигура
         for (const [cx, cy] of current.cells) {
             const px = cx + current.x;
             const py = cy + current.y;
@@ -387,6 +398,7 @@ function darkenColor(hex, amount) {
     return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
 }
 
+// roundRect polyfill
 if (!CanvasRenderingContext2D.prototype.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
         if (typeof r === 'number') r = [r];
@@ -407,6 +419,8 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 function drawMiniCanvas(ctx, type, canvas) {
     const w = canvas.width;
     const h = canvas.height;
+    if (w === 0 || h === 0) return;
+    
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#070a16';
     ctx.fillRect(0, 0, w, h);
@@ -451,7 +465,7 @@ function resizeMiniCanvas(canvas) {
 }
 
 // ============================================================
-// 4. АУДИО (музыка из корня)
+// 4. АУДИО
 // ============================================================
 
 class AudioManager {
@@ -471,7 +485,6 @@ class AudioManager {
             return;
         }
 
-        // Музыка из КОРНЯ (не из папки)
         try {
             this.music = new Audio('korobeiniki_loop.mp3');
             this.music.loop = true;
@@ -484,7 +497,6 @@ class AudioManager {
             this.music = null;
         }
 
-        // Генерация звуков
         this.sounds = {
             move: this.createTone(900, 0.04, 'square'),
             rotate: this.createTone(1400, 0.06, 'sine'),
@@ -493,6 +505,7 @@ class AudioManager {
             tetris: this.createTetris(),
             gameover: this.createGameOver(),
         };
+        console.log('AudioManager инициализирован');
     }
 
     createTone(freq, duration, waveform) {
@@ -634,6 +647,8 @@ class AudioManager {
 // 5. ГЛАВНЫЙ КОМПОНЕНТ
 // ============================================================
 
+console.log('Загрузка игры...');
+
 let state = createInitialState();
 let dropTimer = 0;
 let softDropping = false;
@@ -651,20 +666,39 @@ const levelEl = document.getElementById('level');
 const soundBtn = document.getElementById('sound-btn');
 const pauseBtn = document.getElementById('pause-btn');
 
+console.log('State создан:', state);
+
 function init() {
+    console.log('init() запущен');
     resizeBoard();
-    resizeMiniCanvas(nextCanvas);
-    resizeMiniCanvas(holdCanvas);
+    
+    // Принудительная установка размеров мини-канвасов
+    setTimeout(() => {
+        resizeMiniCanvas(nextCanvas);
+        resizeMiniCanvas(holdCanvas);
+        console.log('Мини-канвасы изменены');
+    }, 50);
+    
     setupControls();
     updateUI();
     audio.startMusic();
+    
+    // Первый кадр
+    drawBoard(state);
+    
+    // Запуск цикла
+    if (animId) cancelAnimationFrame(animId);
+    lastTime = 0;
     loop(0);
+    
     window.addEventListener('resize', () => {
         resizeBoard();
         drawBoard(state);
         drawMiniCanvas(nextCtx, state.nextType, nextCanvas);
         drawMiniCanvas(holdCtx, state.holdType, holdCanvas);
     });
+    
+    console.log('init() завершён');
 }
 
 function loop(time) {
@@ -721,6 +755,9 @@ function updateUI() {
 }
 
 function setupControls() {
+    console.log('Настройка управления...');
+    
+    // Клавиатура
     document.addEventListener('keydown', (e) => {
         if (state.gameOver) {
             if (e.key === 'Enter' || e.key === ' ') { resetGame(); e.preventDefault(); }
@@ -740,13 +777,20 @@ function setupControls() {
         if (e.key === 'ArrowDown') softDropping = false;
     });
 
-    document.getElementById('move-left').addEventListener('click', () => move(-1));
-    document.getElementById('move-right').addEventListener('click', () => move(1));
-    document.getElementById('rotate-btn').addEventListener('click', rotate);
-    document.getElementById('hard-drop').addEventListener('click', hardDrop);
-    document.getElementById('hold-btn').addEventListener('click', hold);
-
+    // Кнопки
+    const btnLeft = document.getElementById('move-left');
+    const btnRight = document.getElementById('move-right');
+    const btnRotate = document.getElementById('rotate-btn');
+    const btnHardDrop = document.getElementById('hard-drop');
+    const btnHold = document.getElementById('hold-btn');
     const softBtn = document.getElementById('soft-drop');
+
+    btnLeft.addEventListener('click', () => { console.log('Влево'); move(-1); });
+    btnRight.addEventListener('click', () => { console.log('Вправо'); move(1); });
+    btnRotate.addEventListener('click', () => { console.log('Поворот'); rotate(); });
+    btnHardDrop.addEventListener('click', () => { console.log('Сброс'); hardDrop(); });
+    btnHold.addEventListener('click', () => { console.log('Холд'); hold(); });
+
     softBtn.addEventListener('mousedown', () => { softDropping = true; });
     softBtn.addEventListener('mouseup', () => { softDropping = false; });
     softBtn.addEventListener('mouseleave', () => { softDropping = false; });
@@ -764,13 +808,14 @@ function setupControls() {
         else if (state.paused) togglePause();
     });
 
+    // Свайпы
     let touchStartX = 0, touchStartY = 0, touchMoved = false;
     boardCanvas.addEventListener('touchstart', (e) => {
         const touch = e.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
         touchMoved = false;
-    });
+    }, { passive: true });
     boardCanvas.addEventListener('touchmove', (e) => {
         e.preventDefault();
         if (!touchStartX) return;
@@ -800,31 +845,53 @@ function setupControls() {
             rotate();
         }
         touchStartX = 0;
-    });
+    }, { passive: true });
+    
+    console.log('Управление настроено');
 }
 
 function move(dir) {
     if (state.gameOver || state.paused) return;
     const newState = gameReducer(state, { type: dir > 0 ? 'MOVE_RIGHT' : 'MOVE_LEFT' });
-    if (newState !== state) { state = newState; audio.playSound('move'); updateUI(); }
+    if (newState !== state) { 
+        state = newState; 
+        audio.playSound('move'); 
+        updateUI();
+        drawBoard(state);
+    }
 }
 
 function rotate() {
     if (state.gameOver || state.paused) return;
     const newState = gameReducer(state, { type: 'ROTATE' });
-    if (newState !== state) { state = newState; audio.playSound('rotate'); updateUI(); }
+    if (newState !== state) { 
+        state = newState; 
+        audio.playSound('rotate'); 
+        updateUI();
+        drawBoard(state);
+    }
 }
 
 function hardDrop() {
     if (state.gameOver || state.paused) return;
     const newState = gameReducer(state, { type: 'HARD_DROP' });
-    if (newState !== state) { state = newState; audio.playSound('drop'); updateUI(); }
+    if (newState !== state) { 
+        state = newState; 
+        audio.playSound('drop'); 
+        updateUI();
+        drawBoard(state);
+    }
 }
 
 function hold() {
     if (state.gameOver || state.paused) return;
     const newState = gameReducer(state, { type: 'HOLD' });
-    if (newState !== state) { state = newState; audio.playSound('rotate'); updateUI(); }
+    if (newState !== state) { 
+        state = newState; 
+        audio.playSound('rotate'); 
+        updateUI();
+        drawBoard(state);
+    }
 }
 
 function togglePause() {
@@ -834,6 +901,7 @@ function togglePause() {
         if (state.paused) audio.stopMusic();
         else audio.resumeMusic();
         updateUI();
+        drawBoard(state);
     }
 }
 
@@ -843,6 +911,18 @@ function resetGame() {
     softDropping = false;
     audio.startMusic();
     updateUI();
+    drawBoard(state);
 }
 
-init();
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
+// Ждём полной загрузки DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+console.log('Скрипт загружен!');
